@@ -1,25 +1,23 @@
 import {usePopularProducts, ProductCard} from '@shopify/shop-minis-react'
+import CameraScreen from './CameraScreen'
+import ResultsScreen from './ResultsScreen'
 
 export function App() {
-  const {products} = usePopularProducts()
+  // Mock data for demonstration
+  const features = ['Oily skin', 'Curly hair', 'Oval face']
+  const products = [
+    { id: '1', title: 'Hydrating Serum', imageUrl: 'https://via.placeholder.com/80' },
+    { id: '2', title: 'Curl Cream', imageUrl: 'https://via.placeholder.com/80' },
+    { id: '3', title: 'Gold Hoop Earrings', imageUrl: 'https://via.placeholder.com/80' },
+    { id: '4', title: 'Face Cleanser', imageUrl: 'https://via.placeholder.com/80' },
+  ]
+
+  const handleCapture = (image: { url: string; blob: Blob }) => {
+    console.log('Captured image:', image)
+    // TODO: Send image to analysis and show results screen
+  }
 
   return (
-    <div className="pt-12 px-4 pb-6">
-      <h1 className="text-2xl font-bold mb-2 text-center">
-        Welcome to Shop Minis!
-      </h1>
-      <p className="text-xs text-blue-600 mb-4 text-center bg-blue-50 py-2 px-4 rounded border border-blue-200">
-        🛠️ Edit <b>src/App.tsx</b> to change this screen and come back to see
-        your edits!
-      </p>
-      <p className="text-base text-gray-600 mb-6 text-center">
-        These are the popular products today
-      </p>
-      <div className="grid grid-cols-2 gap-4">
-        {products?.map(product => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
-    </div>
+    <ResultsScreen features={features} products={products} />
   )
 }
