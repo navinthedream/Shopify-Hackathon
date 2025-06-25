@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { usePopularProducts } from '@shopify/shop-minis-react';
+import { usePopularProducts, useShopNavigation } from '@shopify/shop-minis-react';
 import CameraScreen from './CameraScreen';
 
 interface Product {
@@ -21,6 +21,7 @@ type SortOption = 'price-asc' | 'price-desc' | 'alpha-asc' | 'alpha-desc';
 const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, products, onTryAgain }) => {
   const [activeFeatures, setActiveFeatures] = useState(features);
   const [sortOption, setSortOption] = useState<SortOption>('price-asc');
+  const { navigateToProduct } = useShopNavigation();
 
   const removeFeature = (featureToRemove: string) => {
     setActiveFeatures(activeFeatures.filter(f => f !== featureToRemove));
@@ -41,9 +42,9 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, products, onTry
     }
   });
 
-  const handleProductClick = (url?: string) => {
-    if (url) {
-      window.location.href = url;
+  const handleProductClick = (productId?: string) => {
+    if (productId) {
+      navigateToProduct({ productId });
     }
   };
 
@@ -87,13 +88,13 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, products, onTry
             sortedProducts.map(product => (
               <button
                 key={product.id}
-                className="bg-gray-50 rounded-lg shadow p-2 flex flex-col items-center focus:outline-none hover:bg-blue-50 transition cursor-pointer"
-                onClick={() => handleProductClick(product.onlineStoreUrl)}
-                tabIndex={0}
-                aria-label={`View ${product.title}`}
+                type="button"
+                className="w-full h-36 bg-gray-50 rounded-lg shadow p-2 flex flex-col items-center justify-center focus:outline-none hover:bg-blue-100 active:bg-blue-200 transition cursor-pointer border border-transparent focus:ring-2 focus:ring-blue-400"
+                onClick={() => handleProductClick(product.id)}
+                aria-label={`View and buy ${product.title}`}
               >
                 <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded mb-2" />
-                <span className="text-sm text-center font-medium">{product.title}</span>
+                <span className="text-sm text-center font-medium line-clamp-2">{product.title}</span>
                 <span className="text-xs text-gray-500 mt-1">${product.price.toFixed(2)}</span>
               </button>
             ))
