@@ -1,25 +1,99 @@
-import {usePopularProducts, ProductCard} from '@shopify/shop-minis-react'
+import { useEffect, useState } from 'react';
+import { usePopularProducts, ProductCard } from '@shopify/shop-minis-react';
 
 export function App() {
-  const {products} = usePopularProducts()
+  const { products } = usePopularProducts();
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+
+  const openCamera = async () => {
+    try {
+      console.log('Opening camera with AVFoundation...');
+      
+      // Try AVFoundation bridge methods
+      const avMethods = [
+        () => (window as any).AVFoundation?.capturePhoto(),
+        () => (window as any).webkit?.messageHandlers?.camera?.postMessage({ action: 'capture' }),
+        () => (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: 'CAMERA_CAPTURE' })),
+        () => (window as any).ShopApp?.camera?.capture(),
+        () => (window as any).camera?.capture()
+      ];
+      
+      for (const method of avMethods) {
+        try {
+          const result = await method();
+          if (result) {
+            console.log('AVFoundation result:', result);
+            setCapturedImage(result.uri || result.path || result);
+            return;
+          }
+        } catch (e) {
+          console.log('Method failed:', e);
+        }
+      }
+      
+      // If no AVFoundation methods work, try HTML input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.capture = 'environment';
+      
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setCapturedImage(event.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      
+      input.click();
+      
+    } catch (error) {
+      console.error('Camera error:', error);
+      alert(`Camera error: ${error.message}`);
+    }
+  };
+
+  // Auto-open camera when app loads
+  useEffect(() => {
+    openCamera();
+  }, []);
 
   return (
     <div className="pt-12 px-4 pb-6">
       <h1 className="text-2xl font-bold mb-2 text-center">
-        Welcome to Shop Minis!
+        📸 Selfie Shop!
       </h1>
-      <p className="text-xs text-blue-600 mb-4 text-center bg-blue-50 py-2 px-4 rounded border border-blue-200">
-        🛠️ Edit <b>src/App.tsx</b> to change this screen and come back to see
-        your edits!
-      </p>
-      <p className="text-base text-gray-600 mb-6 text-center">
-        These are the popular products today
-      </p>
+
+      {/* Camera Button */}
+      <div className="text-center mb-6">
+        <button
+          onClick={openCamera}
+          className="bg-purple-600 text-white px-8 py-4 rounded-full text-xl font-bold"
+        >
+          📱 Take Selfie
+        </button>
+      </div>
+
+      {/* Show captured image */}
+      {capturedImage && (
+        <div className="text-center mb-6">
+          <img 
+            src={capturedImage} 
+            alt="Selfie" 
+            className="max-w-xs mx-auto rounded-lg shadow-lg"
+          />
+        </div>
+      )}
+
+      {/* Products */}
       <div className="grid grid-cols-2 gap-4">
         {products?.map(product => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
     </div>
-  )
+  );
 }
