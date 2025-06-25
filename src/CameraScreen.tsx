@@ -1,53 +1,105 @@
-import React, { useRef, useEffect } from 'react';
-import { Camera, CameraElement } from 'react-use-camera';
+import { useEffect, useState } from 'react';
+import { usePopularProducts, ProductCard } from '@shopify/shop-minis-react';
 
 interface CameraScreenProps {
-  onCapture: (image: { url: string; blob: Blob }) => void;
-  onCancel: () => void;
+  onCapture?: (image: { url: string; blob?: Blob }) => void;
+  onCancel?: () => void;
 }
 
 const CameraScreen: React.FC<CameraScreenProps> = ({ onCapture, onCancel }) => {
-  const cameraRef = useRef<CameraElement>(null);
+  const { products } = usePopularProducts();
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
-  const handleCapture = async () => {
-    const imageData = await cameraRef.current?.capture();
-    if (imageData && imageData.blob) {
-      onCapture({ url: imageData.url, blob: imageData.blob });
+  const openCamera = async () => {
+    try {
+      console.log('Opening camera with AVFoundation...');
+      // Try AVFoundation bridge methods
+      const avMethods = [
+        () => (window as any).AVFoundation?.capturePhoto(),
+        () => (window as any).webkit?.messageHandlers?.camera?.postMessage({ action: 'capture' }),
+        () => (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: 'CAMERA_CAPTURE' })),
+        () => (window as any).ShopApp?.camera?.capture(),
+        () => (window as any).camera?.capture()
+      ];
+      for (const method of avMethods) {
+        try {
+          const result = await method();
+          if (result) {
+            console.log('AVFoundation result:', result);
+            setCapturedImage(result.uri || result.path || result);
+            if (onCapture) onCapture({ url: result.uri || result.path || result });
+            return;
+          }
+        } catch (e) {
+          console.log('Method failed:', e);
+        }
+      }
+      // If no AVFoundation methods work, try HTML input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.capture = 'environment';
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setCapturedImage(event.target?.result as string);
+            if (onCapture) onCapture({ url: event.target?.result as string, blob: file });
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    } catch (error: any) {
+      console.error('Camera error:', error);
+      alert(`Camera error: ${error.message}`);
     }
   };
 
+  // Auto-open camera when component mounts
   useEffect(() => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ video: true }).catch(() => {});
-    }
+    openCamera();
+    // eslint-disable-next-line
   }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-black z-50">
-      <div className="flex-1 relative">
+    <div className="pt-12 px-4 pb-6">
+      <h1 className="text-2xl font-bold mb-2 text-center">
+        📸 Selfie Shop!
+      </h1>
+      {/* Camera Button */}
+      <div className="text-center mb-6">
         <button
-          className="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center bg-black/60 rounded-full text-white text-2xl font-bold hover:bg-black/80 focus:outline-none"
-          onClick={onCancel}
-          aria-label="Cancel and return"
+          onClick={openCamera}
+          className="bg-purple-600 text-white px-8 py-4 rounded-full text-xl font-bold"
         >
-          ×
+          📱 Take Selfie
         </button>
-        <Camera
-          ref={cameraRef}
-          className="w-full h-full object-cover"
-          fit="cover"
-          constraints={{ facingMode: 'user' }}
-          errorLayout={<div className="text-white flex items-center justify-center h-full">Camera unavailable</div>}
-        />
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            className="ml-4 bg-gray-300 text-gray-800 px-6 py-4 rounded-full text-xl font-bold"
+          >
+            Cancel
+          </button>
+        )}
       </div>
-      <div className="w-full flex justify-center py-6 bg-gradient-to-t from-black/80 to-transparent">
-        <button
-          className="w-20 h-20 rounded-full bg-white border-4 border-gray-300 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
-          onClick={handleCapture}
-          aria-label="Capture photo"
-        >
-          <span className="block w-12 h-12 bg-gray-200 rounded-full" />
-        </button>
+      {/* Show captured image */}
+      {capturedImage && (
+        <div className="text-center mb-6">
+          <img 
+            src={capturedImage} 
+            alt="Selfie" 
+            className="max-w-xs mx-auto rounded-lg shadow-lg"
+          />
+        </div>
+      )}
+      {/* Products */}
+      <div className="grid grid-cols-2 gap-4">
+        {products?.map(product => (
+          <ProductCard key={product.id} product={product} />
+        ))}
       </div>
     </div>
   );

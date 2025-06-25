@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.5.0",
     "@shopify/shop-minis-react": "latest",
     "react": "18.2.0",
     "react-dom": "18.2.0",
