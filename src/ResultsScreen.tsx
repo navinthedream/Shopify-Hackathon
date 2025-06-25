@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { usePopularProducts, useShopNavigation } from '@shopify/shop-minis-react';
+import { useProductSearch, useShopNavigation } from '@shopify/shop-minis-react';
 import CameraScreen from './CameraScreen';
 
 interface Product {
@@ -12,32 +12,35 @@ interface Product {
 
 interface ResultsScreenProps {
   features: string[];
-  products: Product[];
   onTryAgain: () => void;
   capturedImage?: string | null;
 }
 
 type SortOption = 'price-asc' | 'price-desc' | 'alpha-asc' | 'alpha-desc';
 
-const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, products, onTryAgain, capturedImage }) => {
+const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, onTryAgain, capturedImage }) => {
   const [activeFeatures, setActiveFeatures] = useState(features);
   const [sortOption, setSortOption] = useState<SortOption>('price-asc');
   const { navigateToProduct } = useShopNavigation();
+  const query = activeFeatures.join(' ');
+  const { products, loading, error } = useProductSearch({ query });
 
   const removeFeature = (featureToRemove: string) => {
     setActiveFeatures(activeFeatures.filter(f => f !== featureToRemove));
   };
 
-  const sortedProducts = [...products].sort((a, b) => {
+  const sortedProducts = (products ?? []).slice().sort((a, b) => {
+    const priceA = Number(a.price?.amount ?? 0);
+    const priceB = Number(b.price?.amount ?? 0);
     switch (sortOption) {
       case 'price-asc':
-        return a.price - b.price;
+        return priceA - priceB;
       case 'price-desc':
-        return b.price - a.price;
+        return priceB - priceA;
       case 'alpha-asc':
-        return a.title.localeCompare(b.title);
+        return (a.title ?? '').localeCompare(b.title ?? '');
       case 'alpha-desc':
-        return b.title.localeCompare(a.title);
+        return (b.title ?? '').localeCompare(a.title ?? '');
       default:
         return 0;
     }
@@ -90,7 +93,11 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, products, onTry
           </select>
         </div>
         <div className="grid grid-cols-2 gap-4 mb-8">
-          {sortedProducts.length > 0 ? (
+          {loading ? (
+            <span className="col-span-2 text-gray-400 text-center">Loading products...</span>
+          ) : error ? (
+            <span className="col-span-2 text-red-500 text-center">Error loading products.</span>
+          ) : sortedProducts.length > 0 ? (
             sortedProducts.map(product => (
               <button
                 key={product.id}
@@ -99,9 +106,9 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, products, onTry
                 onClick={() => handleProductClick(product.id)}
                 aria-label={`View and buy ${product.title}`}
               >
-                <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded mb-2" />
+                <img src={product.featuredImage?.url ?? ''} alt={product.title ?? ''} className="w-20 h-20 object-cover rounded mb-2" />
                 <span className="text-sm text-center font-medium line-clamp-2">{product.title}</span>
-                <span className="text-xs text-gray-500 mt-1">${product.price.toFixed(2)}</span>
+                <span className="text-xs text-gray-500 mt-1">${Number(product.price?.amount ?? 0).toFixed(2)}</span>
               </button>
             ))
           ) : (
