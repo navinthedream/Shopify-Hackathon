@@ -5,6 +5,7 @@ import ResultsScreen from './ResultsScreen';
 
 export function App() {
   const [showResults, setShowResults] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const features = ['Oily skin', 'Curly hair', 'Oval face'];
 
   // Fetch real Shopify products
@@ -19,12 +20,20 @@ export function App() {
     onlineStoreUrl: p.onlineStoreUrl,
   }));
 
-  const handleCapture = (image: { url: string; blob: Blob }) => setShowResults(true);
+  const handleCapture = (image: { url: string; blob?: Blob }) => {
+    setCapturedImage(image.url);
+    setShowResults(true);
+  };
   const handleTryAgain = () => setShowResults(false);
   const handleCancel = () => setShowResults(true);
 
   return showResults ? (
-    <ResultsScreen features={features} products={products} onTryAgain={handleTryAgain} />
+    <ResultsScreen
+      features={features}
+      products={products}
+      onTryAgain={handleTryAgain}
+      capturedImage={capturedImage}
+    />
   ) : (
     <CameraScreen onCapture={handleCapture} onCancel={handleCancel} />
   );

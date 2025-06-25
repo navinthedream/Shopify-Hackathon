@@ -14,11 +14,12 @@ interface ResultsScreenProps {
   features: string[];
   products: Product[];
   onTryAgain: () => void;
+  capturedImage?: string | null;
 }
 
 type SortOption = 'price-asc' | 'price-desc' | 'alpha-asc' | 'alpha-desc';
 
-const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, products, onTryAgain }) => {
+const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, products, onTryAgain, capturedImage }) => {
   const [activeFeatures, setActiveFeatures] = useState(features);
   const [sortOption, setSortOption] = useState<SortOption>('price-asc');
   const { navigateToProduct } = useShopNavigation();
@@ -50,6 +51,11 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ features, products, onTry
 
   return (
     <div className="min-h-screen bg-white flex flex-col p-4">
+      {capturedImage && (
+        <div className="flex justify-center mb-4">
+          <img src={capturedImage} alt="Selfie" className="w-32 h-32 object-cover rounded-full shadow-lg" />
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto">
         <h2 className="text-xl font-bold mb-4 text-center">Features Detected</h2>
         <div className="flex flex-wrap gap-2 justify-center mb-6">
