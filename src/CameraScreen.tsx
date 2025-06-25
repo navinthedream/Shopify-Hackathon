@@ -1,11 +1,12 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Camera, CameraElement } from 'react-use-camera';
 
 interface CameraScreenProps {
   onCapture: (image: { url: string; blob: Blob }) => void;
+  onCancel: () => void;
 }
 
-const CameraScreen: React.FC<CameraScreenProps> = ({ onCapture }) => {
+const CameraScreen: React.FC<CameraScreenProps> = ({ onCapture, onCancel }) => {
   const cameraRef = useRef<CameraElement>(null);
 
   const handleCapture = async () => {
@@ -15,9 +16,22 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ onCapture }) => {
     }
   };
 
+  useEffect(() => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true }).catch(() => {});
+    }
+  }, []);
+
   return (
     <div className="fixed inset-0 flex flex-col bg-black z-50">
       <div className="flex-1 relative">
+        <button
+          className="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center bg-black/60 rounded-full text-white text-2xl font-bold hover:bg-black/80 focus:outline-none"
+          onClick={onCancel}
+          aria-label="Cancel and return"
+        >
+          ×
+        </button>
         <Camera
           ref={cameraRef}
           className="w-full h-full object-cover"

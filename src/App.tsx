@@ -1,23 +1,31 @@
-import {usePopularProducts, ProductCard} from '@shopify/shop-minis-react'
-import CameraScreen from './CameraScreen'
-import ResultsScreen from './ResultsScreen'
+import { useState } from 'react';
+import { usePopularProducts } from '@shopify/shop-minis-react';
+import CameraScreen from './CameraScreen';
+import ResultsScreen from './ResultsScreen';
 
 export function App() {
-  // Mock data for demonstration
-  const features = ['Oily skin', 'Curly hair', 'Oval face']
-  const products = [
-    { id: '1', title: 'Hydrating Serum', imageUrl: 'https://via.placeholder.com/80' },
-    { id: '2', title: 'Curl Cream', imageUrl: 'https://via.placeholder.com/80' },
-    { id: '3', title: 'Gold Hoop Earrings', imageUrl: 'https://via.placeholder.com/80' },
-    { id: '4', title: 'Face Cleanser', imageUrl: 'https://via.placeholder.com/80' },
-  ]
+  const [showResults, setShowResults] = useState(false);
+  const features = ['Oily skin', 'Curly hair', 'Oval face'];
 
-  const handleCapture = (image: { url: string; blob: Blob }) => {
-    console.log('Captured image:', image)
-    // TODO: Send image to analysis and show results screen
-  }
+  // Fetch real Shopify products
+  const { products: shopifyProducts } = usePopularProducts();
 
-  return (
-    <ResultsScreen features={features} products={products} />
-  )
+  // Map Shopify products to your ResultsScreen format
+  const products = (shopifyProducts ?? []).map((p: any) => ({
+    id: p.id,
+    title: p.title,
+    imageUrl: p.featuredImage?.url || '',
+    price: Number(p.price?.amount ?? p.priceRange?.minVariantPrice?.amount ?? 0),
+    onlineStoreUrl: p.onlineStoreUrl,
+  }));
+
+  const handleCapture = (image: { url: string; blob: Blob }) => setShowResults(true);
+  const handleTryAgain = () => setShowResults(false);
+  const handleCancel = () => setShowResults(true);
+
+  return showResults ? (
+    <ResultsScreen features={features} products={products} onTryAgain={handleTryAgain} />
+  ) : (
+    <CameraScreen onCapture={handleCapture} onCancel={handleCancel} />
+  );
 }
